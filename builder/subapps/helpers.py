@@ -74,6 +74,13 @@ async def create_async_generator(iterable: Iterable[Any]) -> AsyncGenerator:
 
 async def build_image(job_script_path: Path, dry_run: bool = False):
     """Build an Apptainer image from a Dockerfile."""
+    metadata = load_job_script_metadata(job_script_path)
+    if metadata.image_source is None:
+        skip_message = f"No image source defined for {job_script_path.name}. Skipping the build process"
+        logger.debug(skip_message)
+        terminal_message(skip_message, "Build Skipped")
+        return
+
     with Abort.handle_errors(
         "Failed to build Docker image",
         raise_kwargs={

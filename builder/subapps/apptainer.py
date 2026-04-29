@@ -15,6 +15,7 @@ from builder.subapps.helpers import (
     check_existing_paths,
     check_sif_exists,
     find_job_scripts,
+    load_job_script_metadata,
     publish_image,
     run_tasks_concurrently,
 )
@@ -62,7 +63,10 @@ def publish(
 
     job_scripts = find_job_scripts(job_scripts)
 
-    check_sif_exists(job_scripts)
+    image_backed_job_scripts = [
+        path for path in job_scripts if load_job_script_metadata(path).image_source is not None
+    ]
+    check_sif_exists(image_backed_job_scripts)
     tasks = [
         publish_image(job_script_path, settings, dry_run, ctx_obj.verbose) for job_script_path in job_scripts
     ]
