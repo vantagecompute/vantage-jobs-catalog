@@ -30,7 +30,9 @@ jobs:
       - name: Set up Python for Poetry
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version-file: .python-version
+          # .python-version pins 3.12.3, which actions/python-versions does not
+          # build for Ubuntu 26.04; any 3.12 satisfies pyproject's ^3.12.
+          python-version: '3.12'
 
       - name: Install Poetry
         uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec # v9
@@ -40,6 +42,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
+          python-version: '3.12'
           # Self-hosted runners keep Poetry's cache on local disk.
           cache: ${{ runner.environment == 'github-hosted' && 'poetry' || '' }}
 
