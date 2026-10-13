@@ -7,10 +7,14 @@ on:
       - release/**
   pull_request:
 
+# Set the repository variable USE_SELF_HOSTED_RUNNERS to "true" to run every
+# job below in the vantage-eng runner group; otherwise they run on GitHub-hosted
+# ubuntu-26.04. SELF_HOSTED_RUNS_ON, a runs-on value in JSON such as
+# ["self-hosted", "Linux", "X64"], replaces the default runner set.
 jobs:
   qa:
     name: Code Quality Assurance
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.USE_SELF_HOSTED_RUNNERS == 'true' && fromJSON(vars.SELF_HOSTED_RUNS_ON || '{"group":"vantage-eng","labels":["X64"]}') || 'ubuntu-26.04' }}
 
     steps:
       - name: Checkout code
@@ -20,23 +24,34 @@ jobs:
         with:
           node-version: '22.8.0'
           
+      # setup-poetry pip-installs Poetry into the python on PATH. On a
+      # self-hosted runner that is the system Python, which refuses pip
+      # installs (PEP 668), so put the setup-python one first.
+      - name: Set up Python for Poetry
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: .python-version
+
       - name: Install Poetry
         uses: Gr1N/setup-poetry@v8
         with:
           poetry-version: 1.8.0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          cache: 'poetry'
+          # Self-hosted runners keep Poetry's cache on local disk.
+          cache: ${{ runner.environment == 'github-hosted' && 'poetry' || '' }}
 
       - name: Cache Ruff
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
         with:
           path: .ruff_cache
           key: ${{ runner.os }}-ruff-${{ hashFiles('.ruff_cache/CACHEDIR.TAG') }}
 
       - name: Cache Mypy
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
         with:
           path: .mypy_cache
